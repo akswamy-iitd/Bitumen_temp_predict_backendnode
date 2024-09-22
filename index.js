@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const router = require("./routes/index.js");
-const { NotFoundErrorHandler } = require("./errors/notFoundErrorHandler");
 const { GlobalErrorHandler } = require("./errors/globalErrorHandler");
 // Initialize express app
 const app = express();
@@ -14,7 +13,7 @@ const port = process.env.PORT || 8000;
 // Setup CORS
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "https://admin-bitumen-temp-predictor.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -41,7 +40,6 @@ app.get("/", async (req, res) => {
 app.use('/api',router);
 // Add Routes here
 // Don't add any route after this two middlewares
-app.use(NotFoundErrorHandler);
 
 app.use(GlobalErrorHandler);
 app.listen(port, () => {
