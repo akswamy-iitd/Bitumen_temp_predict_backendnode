@@ -4,9 +4,10 @@ const { checkForAuthenticationCookie } = require("../middleware/auth.js");
 const UserRouter = require("./user.routes.js");
 const ProUserRouter = require("./prouser.routes.js");
 const { adminMiddleware } = require("../middleware/adiminMiddleware.js");
+const { signin } = require("../controllers/admin.controller.js");
 
 const router = express.Router();
-
+router.post("/admin/signin", signin);
 router.use("/admin", adminMiddleware, AdminRouter); 
 router.use(checkForAuthenticationCookie("token")); 
 router.use("/user", UserRouter);
