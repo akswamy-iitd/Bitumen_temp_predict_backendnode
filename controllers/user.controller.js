@@ -1,10 +1,4 @@
 const User = require("../models/user");
-const {
-  NotFoundError,
-  BadRequestError,
-  UnauthorizedError,
-  InternalServerError,
-} = require("../errors");
 
 require("dotenv").config();
 
@@ -48,11 +42,11 @@ UserController.getProfile = async (req, res, next) => {
     if (user) {
       res.json(user);
     } else {
-      return next(InternalServerError("Not able to find User"));
+      return res.status(404).json({ error: "User not found" });
     }
   } catch (error) {
     console.error("Error fetching profile:", error);
-    return next(InternalServerError("Error fetching profile"));
+    return res.status(404).json({ error: "User not found" });
   }
 };
 
@@ -62,7 +56,7 @@ UserController.logout = (req, res, next) => {
     res.clearCookie("token", { path: "/", sameSite: "None", secure: true });
     res.status(200).json({ message: "You are logged out" });
   } catch (error) {
-    return next(InternalServerError("Logout failed"));
+    return res.status(404).json({ error: "User not found" });
   }
 };
 
@@ -71,14 +65,14 @@ UserController.signup = async (req, res, next) => {
   const { fullName, email, password } = req.body;
   try {
     if (!fullName || !email || !password) {
-      return next(BadRequestError("Missing required fields"));
+      return res.status(404).json({ error: "User not found" });
     }
 
     await User.signup(fullName, email, password);
     res.json("User is created");
   } catch (error) {
     console.error("Error creating user:", error);
-    return next(InternalServerError("Server error || duplicate data"));
+    return res.status(404).json({ error: "User not found" });
   }
 };
 
@@ -92,7 +86,7 @@ UserController.dashboard = async (req, res, next) => {
     );
 
     if (!userData) {
-      return next(NotFoundError("User not found"));
+      return res.status(404).json({ error: "User not found" });
     }
 
     if (userData.role === "ADMIN") {
@@ -105,7 +99,7 @@ UserController.dashboard = async (req, res, next) => {
     }
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
-    return next(InternalServerError());
+    return res.status(404).json({ error: "User not found" });
   }
 };
 
@@ -116,11 +110,11 @@ UserController.finddata = async (req, res, next) => {
     const userData = await User.findById(user._id);
 
     if (!userData) {
-      return next(NotFoundError("User not found"));
+      return res.status(404).json({ error: "User not found" });
     }
 
     if (userData.creditleft <= 0) {
-      return next(BadRequestError("Insufficient credits"));
+      return res.status(400).json({ error: "Insufficient credits" });
     }
 
     const { lat, lon, altitude, elevation, category } = req.body;
@@ -162,11 +156,11 @@ UserController.finddata = async (req, res, next) => {
     } else {
       const responseText = await backendResponse.text();
       console.error("Unexpected response format:", responseText);
-      return next(InternalServerError("Failed to process data"));
+      return res.status(500).json({ error: "Failed to process data" });
     }
   } catch (error) {
     console.error("Error processing /dashboard/find:", error);
-    return next(InternalServerError());
+    return res.status(500).json({ error: "Failed to process data" });
   }
 };
 

@@ -2,7 +2,6 @@ const User = require("../models/user");
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-const { BadRequestError, NotFoundError, InternalServerError, UnauthorizedError } = require('../errors');
 
 const AdminController = {};
 
@@ -12,7 +11,7 @@ AdminController.signin = async (req, res) => {
         const adminPassword = process.env.ADMIN_PASSWORD;
 
         if (password !== adminPassword) {
-            return res.status( UnauthorizedError('Incorrect Password').statusCode).json({ error: 'Incorrect Password' });
+            return res.status(404).json({ error: "Incorrect Password" });
         }
 
         const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1d' });
@@ -27,7 +26,7 @@ AdminController.signin = async (req, res) => {
 
     } catch (error) {
         console.error('Error during signin:', error);
-        res.status( InternalServerError().statusCode).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -37,7 +36,7 @@ AdminController.logout = (res) => {
         res.status(200).json({ message: 'You are logged out' });
     } catch (error) {
         console.error('Error during logout:', error);
-        res.status( InternalServerError('Internal Server Error').statusCode).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -48,15 +47,15 @@ AdminController.updateUserCredit = async (req, res) => {
 
     try {
         if (creditleft !== undefined && typeof creditleft !== 'number') {
-            return res.status( BadRequestError('creditleft must be a number').statusCode).json({ error: 'creditleft must be a number' });
-        }
+            return res.status(500).json({ error: 'creditleft must be a number' });
+            }
         if (creditused !== undefined && typeof creditused !== 'number') {
-            return res.status( BadRequestError('creditused must be a number').statusCode).json({ error: 'creditused must be a number' });
+            return res.status(500).json({ error: 'creditused must be a number' });
         }
 
         const user = await User.findOne({ userId });
         if (!user) {
-            return res.status( NotFoundError('User not found').statusCode).json({ error: 'User not found' });
+            return res.status(404).json({ error: 'User not found' });
         }
 
         if (creditleft !== undefined) {
@@ -70,7 +69,7 @@ AdminController.updateUserCredit = async (req, res) => {
         res.json({ message: 'User credits updated successfully', user });
     } catch (error) {
         console.error('Error updating user credits:', error);
-        res.status( InternalServerError('Internal Server Error').statusCode).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error' });   
     }
 };
 
@@ -80,7 +79,7 @@ AdminController.getAllUsers = async (req, res) => {
         res.json({ users });
     } catch (error) {
         console.error('Error fetching users:', error);
-        res.status( InternalServerError('Failed to fetch users').statusCode).json({ error: 'Failed to fetch users' });
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
@@ -90,14 +89,14 @@ AdminController.getUsersByRole = async (req, res) => {
     try {
         const validRoles = ['USER', 'USER2', 'ADMIN'];
         if (!validRoles.includes(role)) {
-            return res.status( BadRequestError('Invalid role').statusCode).json({ error: 'Invalid role' });
+            return res.status(400).json({ error: 'Invalid role specified' });
         }
 
         const users = await User.find({ role });
         res.json({ users });
     } catch (error) {
         console.error('Error fetching users by role:', error);
-        res.status( InternalServerError('Failed to fetch users by role').statusCode).json({ error: 'Failed to fetch users by role' });
+        res.status(500).json({ error: 'Internal Server Error' });   
     }
 };
 
@@ -107,13 +106,13 @@ AdminController.deleteUser = async (req, res) => {
     try {
         const user = await User.findOneAndDelete({ userId });
         if (!user) {
-            return res.status( NotFoundError('User not found').statusCode).json({ error: 'User not found' });
-        }
+            return res.status(404).json({ error: 'User not found' });
+        }   
 
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error('Error deleting user:', error);
-        res.status( InternalServerError('Failed to delete user').statusCode).json({ error: 'Failed to delete user' });
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 

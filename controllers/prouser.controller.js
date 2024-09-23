@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 const User = require("../models/user");
-const {
-  NotFoundError,
-  BadRequestError,
-  UnauthorizedError,
-  InternalServerError,
-} = require("../errors");
+
 
 require("dotenv").config();
 
@@ -20,7 +15,7 @@ ProUserController.signin = async (req, res, next) => {
     console.log("Token:", token);
     const user = await User.findOne({ email });
     if (!user) {
-      return next(NotFoundError("User not found"));
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.cookie("token", token, {
@@ -38,7 +33,8 @@ ProUserController.signin = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(UnauthorizedError("Incorrect Email or Password"));
+    console.error("Error signing in user:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 ProUserController.getProfile = async (req, res) => {
@@ -58,7 +54,7 @@ ProUserController.getProfile = async (req, res) => {
 
     res.json(userData);
   } else {
-    InternalServerError("Not able to find User");
+    res.status(404).json({ error: "User not found" });
   }
 };
 
@@ -67,7 +63,8 @@ ProUserController.logout = (req, res, next) => {
     res.clearCookie("token", { path: "/", sameSite: "None", secure: true });
     res.status(200).json({ message: "You are logged out" });
   } catch (error) {
-    return next(InternalServerError("Logout failed"));
+    console.error("Error during logout:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -75,16 +72,17 @@ ProUserController.signup = async (req, res, next) => {
   const { fullName, email, password, secretCode } = req.body;
   try {
     if (!fullName || !email || !password || !secretCode) {
-      return next(BadRequestError("Missing required fields"));
-    }
+      return res.status(404).json({ error: "User not found" }); 
+    } 
 
     await User.signup(fullName, email, password, secretCode);
     res.json("User is created");
   } catch (error) {
     console.error("Error creating user:", error);
     return next(
-      InternalServerError("Server error || duplicate data || wrong code")
-    );
+  
+      res.status(500).json({ error: "Internal Server Error" })  
+      );
   }
 };
 
@@ -96,7 +94,7 @@ ProUserController.dashboard = async (req, res, next) => {
       .findById(user._id, "creditleft creditused role");
 
     if (!userData) {
-      return next(NotFoundError("User not found"));
+      return res.status(404).json({ error: "User not found" }); 
     }
 
     if (userData.role === "ADMIN") {
@@ -109,7 +107,7 @@ ProUserController.dashboard = async (req, res, next) => {
     }
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
-    return next(InternalServerError());
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -119,11 +117,11 @@ ProUserController.find = async (req, res, next) => {
     const userData = await mongoose.model("User").findById(user._id);
 
     if (!userData) {
-      return next(NotFoundError("User not found"));
+      return res.status(404).json({ error: "User not found" });
     }
 
     if (userData.role !== "ADMIN" && userData.creditleft <= 0) {
-      return next(BadRequestError("Insufficient credits"));
+      return res.status(400).json({ error: "Insufficient credits" });
     }
 
     if (userData.role !== "ADMIN") {
@@ -173,11 +171,11 @@ ProUserController.find = async (req, res, next) => {
     } else {
       const responseText = await backendResponse.text();
       console.error("Unexpected response format:", responseText);
-      return next(InternalServerError("Failed to process data"));
+      return res.status(500).json({ error: "Failed to process data" });
     }
   } catch (error) {
     console.error("Error processing /dashboard/find:", error);
-    return next(InternalServerError());
+    return res.status(500).json({ error: "Failed to process data" });
   }
 };
 ProUserController.predict = async (req, res) => {
@@ -237,4 +235,5 @@ ProUserController.predict = async (req, res) => {
     console.error("Failed to fetch data from Flask API:", error);
   }
 };
+
 module.exports = ProUserController;

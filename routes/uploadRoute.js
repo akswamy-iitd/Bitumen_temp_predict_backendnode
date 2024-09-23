@@ -4,7 +4,6 @@ const csv = require("csv-parser");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
-const { InternalServerError } = require("../errors/index.js");
 require("dotenv").config();
 
 const router = express.Router();
