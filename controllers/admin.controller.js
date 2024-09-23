@@ -2,9 +2,9 @@ const User = require("../models/user");
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-
 const AdminController = {};
 
+// Admin Sign-in
 AdminController.signin = async (req, res) => {
     const { password } = req.body;
     try {
@@ -30,9 +30,10 @@ AdminController.signin = async (req, res) => {
     }
 };
 
-AdminController.logout = (res) => {
+// Admin Logout
+AdminController.logout = (req, res) => {
     try {
-        res.clearCookie('token', { path: '/', sameSite: 'None', secure: true });
+        res.clearCookie('token', { path: '/', sameSite: 'None', secure: process.env.NODE_ENV === 'production' });
         res.status(200).json({ message: 'You are logged out' });
     } catch (error) {
         console.error('Error during logout:', error);
@@ -40,17 +41,17 @@ AdminController.logout = (res) => {
     }
 };
 
-
+// Update user credits
 AdminController.updateUserCredit = async (req, res) => {
     const { userId } = req.params;
     const { creditleft, creditused } = req.body;
 
     try {
         if (creditleft !== undefined && typeof creditleft !== 'number') {
-            return res.status(500).json({ error: 'creditleft must be a number' });
-            }
+            return res.status(400).json({ error: 'creditleft must be a number' });
+        }
         if (creditused !== undefined && typeof creditused !== 'number') {
-            return res.status(500).json({ error: 'creditused must be a number' });
+            return res.status(400).json({ error: 'creditused must be a number' });
         }
 
         const user = await User.findOne({ userId });
@@ -69,10 +70,11 @@ AdminController.updateUserCredit = async (req, res) => {
         res.json({ message: 'User credits updated successfully', user });
     } catch (error) {
         console.error('Error updating user credits:', error);
-        res.status(500).json({ error: 'Internal Server Error' });   
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
+// Get all users
 AdminController.getAllUsers = async (req, res) => {
     try {
         const users = await User.find({});
@@ -83,6 +85,7 @@ AdminController.getAllUsers = async (req, res) => {
     }
 };
 
+// Get users by role
 AdminController.getUsersByRole = async (req, res) => {
     const { role } = req.params;
 
@@ -96,10 +99,11 @@ AdminController.getUsersByRole = async (req, res) => {
         res.json({ users });
     } catch (error) {
         console.error('Error fetching users by role:', error);
-        res.status(500).json({ error: 'Internal Server Error' });   
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
+// Delete user
 AdminController.deleteUser = async (req, res) => {
     const { userId } = req.params;
 
@@ -107,7 +111,7 @@ AdminController.deleteUser = async (req, res) => {
         const user = await User.findOneAndDelete({ userId });
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
-        }   
+        }
 
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
