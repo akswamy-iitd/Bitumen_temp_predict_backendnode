@@ -26,7 +26,7 @@ router.get("/", async (req, res) => {
     }
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
-    res.status(new InternalServerError().statusCode).json({ error: 'Internal Server Error' });
+    res.status( InternalServerError().statusCode).json({ error: 'Internal Server Error' });
   }
 });
 

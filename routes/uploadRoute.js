@@ -147,7 +147,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       });
   } catch (error) {
     console.error("Error processing /upload:", error);
-    res.status(new InternalServerError().statusCode).json({ error: 'Internal Server Error' });
+    res.status( InternalServerError().statusCode).json({ error: 'Internal Server Error' });
   }
 });
 

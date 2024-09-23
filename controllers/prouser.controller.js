@@ -225,7 +225,7 @@ ProUserController.predict = async (req, res) => {
 
     // Check if the response is okay (status code 200-299)
     if (!backendResponse.ok) {
-      throw new Error(
+      throw Error(
         `Error: ${backendResponse.status} ${backendResponse.statusText}`
       );
     }
