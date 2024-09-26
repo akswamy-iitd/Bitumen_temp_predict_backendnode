@@ -57,7 +57,7 @@ userSchema.pre("save", function (next) {
 });
 userSchema.statics.matchPasswordAndGenrateToken = async function (email, password) {
     const user = await this.findOne({ email });
-    
+    if (!user) throw new Error('User not found!');
 
     const salt = user.salt;
     const hashedPassword = user.password;
@@ -67,13 +67,13 @@ userSchema.statics.matchPasswordAndGenrateToken = async function (email, passwor
         .digest('hex');
       
     if (hashedPassword !== userProvidedHash)
-        throw new Error('Invalid password');
+        throw new Error('Incorrect Password');
 
     const token = createTokenForUser(user);
     return token;
 };
 
-userSchema.statics.signup = async function (fullName, email, password, role = "USER") {
+userSchema.statics.signup = async function (fullName, email, password, creditleft = 10, role = "USER") {
     const validRoles = ["USER", "PRO_USER"];
     if (!validRoles.includes(role)) throw new Error('Invalid role specified');
 
@@ -97,7 +97,8 @@ userSchema.statics.signup = async function (fullName, email, password, role = "U
         fullName,
         email,
         password,
-        role
+        role,
+        creditleft,
     });
 
     // Save the new user to the database

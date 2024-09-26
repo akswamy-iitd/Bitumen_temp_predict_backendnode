@@ -8,5 +8,6 @@ AdminRouter.post('/updatecredit', AdminController.updateUserCredit);
 AdminRouter.get('/users', AdminController.getAllUsers);
 AdminRouter.get('/users/:role', AdminController.getUsersByRole);
 AdminRouter.delete('/users/:userId', AdminController.deleteUser);
+AdminRouter.post('/message', AdminController.sendMessage);
 
 module.exports = AdminRouter;
