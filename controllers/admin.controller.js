@@ -9,26 +9,20 @@ const AdminController = {};
 
 
 AdminController.checkUser = async (req, res) => {
-    console.log('Checking user');
     const token = req.cookies.token;
-    console.log(token);
 
     if (!token) {
         return res.status(401).json({ error: "No token provided, authorization denied" });
     }
-    console.log('Token:', token);
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('Decoded:', decoded);
         if (decoded.role !== 'admin') {
             return res.status(401).json({ error: "Invalid token, authorization denied" });
         }
-        console.log('User is admin');
         res.status(200).json({ message: "You are logged" });
     } catch (error) {
         console.error('Error during user check:', error);
-        console.log('User is not admin');
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -47,11 +41,8 @@ AdminController.signin = async (req, res) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // secure=true only in production
-            sameSite: 'None', // For cross-site cookies
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         });
-        
 
         res.json({ message: 'Login successful' });
 
@@ -89,7 +80,7 @@ AdminController.updateUserCredit = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });   
         }
-
+        
         user.creditleft = credit;
 
         await user.save();
