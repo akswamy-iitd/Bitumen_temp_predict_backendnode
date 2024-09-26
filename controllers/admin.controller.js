@@ -4,7 +4,31 @@ const jwt = require('jsonwebtoken');
 
 const AdminController = {};
 
-// Admin Sign-in
+
+AdminController.checkUser = async (req, res) => {
+    // Get the token from cookies
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.status(401).json({ error: "No token provided, authorization denied" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.role !== 'admin') {
+            return res.status(401).json({ error: "Invalid token, authorization denied" });
+        }
+        console.log('decoded:', decoded);
+
+        // Optionally, check if the user has the right role, etc.
+        res.status(200).json({ message: "You are logged" });
+    } catch (error) {
+        console.error('Error during user check:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+        
+
 AdminController.signin = async (req, res) => {
     const { password } = req.body;
     try {
