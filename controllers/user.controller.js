@@ -1,10 +1,28 @@
+const jwt = require("jsonwebtoken");
 const User = require("../models/user");
-
 require("dotenv").config();
 
-const UserController = {}; // Define the UserController object
+const UserController = {}; 
+const secret = process.env.JWT_SECRET;
 
-// Signin Route
+UserController.userCheck = (req, res) => {
+
+  const token = req.cookies.token; 
+
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, secret);
+    return res.status(200).json({ message: "Token is valid", user: decoded });
+  } catch (error) {
+    console.error("Token verification failed: ", error.message);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+};
+
+
 UserController.signin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
@@ -17,8 +35,9 @@ UserController.signin = async (req, res, next) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 1 day
+      // sameSite: "None",
     });
 
     res.json({
@@ -31,14 +50,14 @@ UserController.signin = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error signing in user:", error);
-    return next(UnauthorizedError("Incorrect Email or Password"));
+    return  res.status(404).json({ error: "User not found" }); 
   }
 };
 
 // Get Profile Route
 UserController.getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user.id).select("-password -salt");
     if (user) {
       res.json(user);
     } else {
@@ -51,14 +70,14 @@ UserController.getProfile = async (req, res, next) => {
 };
 
 // Logout Route
-UserController.logout = (req, res, next) => {
-  try {
-    res.clearCookie("token", { path: "/", sameSite: "None", secure: true });
-    res.status(200).json({ message: "You are logged out" });
-  } catch (error) {
-    return res.status(404).json({ error: "User not found" });
-  }
-};
+// UserController.logout = (req, res, next) => {
+//   try {
+//     res.clearCookie("token", { path: "/", sameSite: "None", secure: true });
+//     res.status(200).json({ message: "You are logged out" });
+//   } catch (error) {
+//     return res.status(404).json({ error: "User not found" });
+//   }
+// };
 
 // Signup Route
 UserController.signup = async (req, res, next) => {
@@ -169,31 +188,24 @@ UserController.predict = async (req, res) => {
   try {
     const user = req.user;
 
-    const userData = await mongoose.model("User").findById(user._id);
+    const userData = await mongoose.model("User").findById(user.id);
     if (!userData) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (userData.role !== "ADMIN" && userData.creditleft <= 0) {
+    if ( userData.creditleft <= 0) {
       return res.status(400).json({ error: "Insufficient credits" });
     }
 
-    if (userData.role !== "ADMIN") {
       userData.creditleft -= 1;
       userData.creditused += 1;
-    } else {
-      userData.creditused += 1;
-    }
-  } catch (error) {
-    console.error("Error processing /dashboard/find:", error);
-    res.status(500).json({ error: "Failed to process data" });
-  }
+
   const fetch = (...args) =>
     import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
   try {
     const backendResponse = await fetch(
-      `http://10.184.19.231:9001/predict/composite`,
+      `${process.env.FLASK_API_URL}/predict`,
       {
         method: "POST",
         headers: {
@@ -220,6 +232,10 @@ UserController.predict = async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error("Failed to fetch data from Flask API:", error);
+  }
+  } catch (error) {
+    console.error("Error processing prediction:", error);
+    return res.status(500).json({ error: "Failed to process prediction" });
   }
 };
 module.exports = UserController;

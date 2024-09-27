@@ -1,20 +1,22 @@
 const express = require("express");
 const AdminRouter = require("./admin.routes.js");
-const { checkForAuthenticationCookie } = require("../middleware/auth.js");
+const checkForAuthenticationCookie = require("../middleware/auth.js");
 const UserRouter = require("./user.routes.js");
 const ProUserRouter = require("./prouser.routes.js");
 const { adminMiddleware } = require("../middleware/adiminMiddleware.js");
-const { signin,checkUser } = require("../controllers/admin.controller.js");
+const { signin,checkAdmin } = require("../controllers/admin.controller.js");
+const UserController = require("../controllers/user.controller.js");
+
 
 const router = express.Router();
-router.post("/admin/check",checkUser);
+router.post("/admin/check",checkAdmin);
 router.post("/admin/signin", signin);
 router.use("/admin", adminMiddleware, AdminRouter); 
-router.use(checkForAuthenticationCookie("token")); 
-router.use("/user", UserRouter);
-router.use("/prouser", ProUserRouter);
-
-
+router.get("/user/check",UserController.userCheck);
+router.post("/signup",UserController.signup);
+router.post("/signin",UserController.signin);
+router.use("/user",checkForAuthenticationCookie, UserRouter);
+router.use("/prouser",checkForAuthenticationCookie, ProUserRouter);
 
 
 

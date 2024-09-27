@@ -8,7 +8,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const AdminController = {};
 
 
-AdminController.checkUser = async (req, res) => {
+AdminController.checkAdmin = async (req, res) => {
     console.log('Checking user');
     const token = req.cookies.token;
     console.log(token);
@@ -47,8 +47,8 @@ AdminController.signin = async (req, res) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // secure=true only in production
-            sameSite: 'None', // For cross-site cookies
+            // secure: process.env.NODE_ENV === 'production', // secure=true only in production
+            // sameSite: 'None', // For cross-site cookies
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         });
         
@@ -62,17 +62,17 @@ AdminController.signin = async (req, res) => {
 };
 
 // Admin Logout
-AdminController.logout = (req, res) => {
-    console.log('Logging out');
-    try {
-        res.clearCookie('token');
-        // console.log('Logged out');
-        res.status(200).json({ message: 'You are logged out' });
-    } catch (error) {
-        console.error('Error during logout:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-};
+// AdminController.logout = (req, res) => {
+//     console.log('Logging out');
+//     try {
+//         res.clearCookie('token');
+//         // console.log('Logged out');
+//         res.status(200).json({ message: 'You are logged out' });
+//     } catch (error) {
+//         console.error('Error during logout:', error);
+//         res.status(500).json({ error: 'Internal Server Error' });
+//     }
+// };
 
 AdminController.updateUserCredit = async (req, res) => {
     const { credit, userId } = req.body;

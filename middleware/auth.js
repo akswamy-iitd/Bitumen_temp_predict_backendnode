@@ -1,25 +1,21 @@
-const { validateToken } = require("../services/authentication");
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
-function checkForAuthenticationCookie(cookieName) {
-    return async(req, res, next) => {
-        const tokenCookieValue = req.cookies[cookieName];
-        if (!tokenCookieValue) {
-            return next(); 
-        } 
-        try{
-            const userPayload = validateToken(tokenCookieValue);
-            req.user = userPayload;
-            
-            next(); 
-        } catch (error) {        
-            res.clearCookie('token');       
-            console.error("Token validation error:", error);
-            
-            res.status(401).json({ error: "Unauthorized" }); 
+const checkForAuthenticationCookie = (req, res, next) => {
+    // First check if cookies or headers exist before accessing them
+    const token = req.cookies?.token || (req.headers && req.headers['authorization']?.split(' ')[1]);
+    if (!token) {
+        return res.status(401).json({ message: 'Unauthorized: No token provided' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ message: 'Unauthorized: Invalid token' });
         }
-    };
-}
 
-module.exports = {
-    checkForAuthenticationCookie,
+        req.user = decoded;
+        next();
+    });
 };
+
+module.exports = checkForAuthenticationCookie;
