@@ -8,10 +8,20 @@ const router = require("./routes/index.js");
 const app = express();
 const port = process.env.PORT || 8000;
 
-// Setup CORS
+const allowedOrigins = [
+  `${process.env.ADMIN_CLIENT_URL}`, // Admin client URL
+  `${process.env.USER_CLIENT_URL}`,   // User client URL
+];
+
 app.use(
   cors({
-    origin: `${process.env.CLIENT_URL}`,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, origin);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
