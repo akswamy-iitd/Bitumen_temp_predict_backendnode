@@ -11,10 +11,10 @@ const port = process.env.PORT || 8000;
 
 app.use(
   cors({
-    origin: '*',
+    origin: true, // Automatically reflects the request origin
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    credentials: true, // Allows sending cookies with cross-origin requests
   })
 );
 
