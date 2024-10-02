@@ -133,7 +133,7 @@ AdminController.getUsersByRole = async (req, res) => {
 
 // Delete user
 AdminController.deleteUser = async (req, res) => {
-    const { userId } = req.params;
+    const { userId } = req.body;
 
     try {
         const user = await User.findOneAndDelete({ userId });
