@@ -1,6 +1,10 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 require("dotenv").config();
+const requestIp = require("request-ip");
+const useragent = require("express-useragent");
+const geoip = require("geoip-lite");
+const bcrypt = require("bcrypt");
 
 const UserController = {}; 
 const secret = process.env.JWT_SECRET;
@@ -25,19 +29,47 @@ UserController.userCheck = (req, res) => {
 
 UserController.signin = async (req, res, next) => {
   const { email, password } = req.body;
+  
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return next(NotFoundError("User not found"));
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const token = await User.matchPasswordAndGenrateToken(email, password);
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid password" });
+    }
+
+    // Retrieve IP address and device information
+    const clientIp = requestIp.getClientIp(req);
+    const deviceInfo = req.useragent || {}; // Ensure you have this middleware set up
+    const locationInfo = geoip.lookup(clientIp) || {};
+
+    console.log('Login History Entry:', {
+      ip: clientIp,
+      device: {
+          type: deviceInfo?.type || 'Unknown',
+          os: deviceInfo?.os || 'Unknown',
+          platform: deviceInfo?.platform || 'Unknown',
+      },
+      location: {
+          type: locationInfo?.type || 'Unknown',
+          city: locationInfo?.city || 'Unknown',
+          region: locationInfo?.region || 'Unknown',
+          country: locationInfo?.country || 'Unknown',
+      },
+      logintime: new Date(),
+  });
+  
+    // Call matchPasswordAndGenerateToken with necessary parameters
+    const { token } = await User.matchPasswordAndGenerateToken(email, password, clientIp, deviceInfo, locationInfo);
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
       sameSite: "None",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
 
     res.json({
@@ -50,7 +82,7 @@ UserController.signin = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error signing in user:", error);
-    return  res.status(404).json({ error: "User not found" }); 
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -69,6 +101,8 @@ UserController.getProfile = async (req, res, next) => {
   }
 };
 
+
+
 // Logout Route
 // UserController.logout = (req, res, next) => {
 //   try {
@@ -78,22 +112,35 @@ UserController.getProfile = async (req, res, next) => {
 //     return res.status(404).json({ error: "User not found" });
 //   }
 // };
-
-// Signup Route
 UserController.signup = async (req, res, next) => {
   const { fullName, email, password } = req.body;
-  try {
-    if (!fullName || !email || !password) {
-      return res.status(404).json({ error: "User not found" });
-    }
 
-    await User.signup(fullName, email, password);
-    res.json("User is created");
+  // Validate input
+  if (!fullName || !email || !password) {
+    return res.status(400).json({ error: "All fields (fullName, email, password) are required" });
+  }
+
+  // Optionally, add email format validation here
+
+  try {
+    // Use the User model's signup function
+    const user = await User.signup(fullName, email, password);
+
+    // Respond with success message
+    res.status(201).json({ message: "User is created", user });
   } catch (error) {
     console.error("Error creating user:", error);
-    return res.status(404).json({ error: "User not found" });
+
+    // Handle specific errors if needed (e.g., if the user already exists)
+    if (error.message.includes("User already exists")) {
+      return res.status(409).json({ error: "Email already in use" });
+    }
+
+    // General error fallback
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 // Dashboard Route
 UserController.dashboard = async (req, res, next) => {

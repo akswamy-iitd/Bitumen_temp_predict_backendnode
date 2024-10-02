@@ -28,7 +28,18 @@ router.use("/prouser",checkForAuthenticationCookie, ProUserRouter);
 router.get('/logout', (req, res) => {
     console.log('Logging out');
     try {
-        res.clearCookie('token');
+        res.clearCookie("token", { path: "/", sameSite: "None", secure: true });
+        res.status(200).json({ message: 'You are logged out' });
+    } catch (error) {
+        console.error('Error during logout:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+router.get('/admin/logout', (req, res) => {
+    console.log('Logging out');
+    try {
+        res.clearCookie("admin_token", { path: "/", sameSite: "None", secure: true });
         res.status(200).json({ message: 'You are logged out' });
     } catch (error) {
         console.error('Error during logout:', error);

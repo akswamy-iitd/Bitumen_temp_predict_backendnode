@@ -7,6 +7,7 @@ const path = require("path");
 const router = require("./routes/index.js");
 const app = express();
 const port = process.env.PORT || 8000;
+const useragent = require("express-useragent");
 
 
 app.use(
@@ -28,6 +29,8 @@ app.use(express.static(path.resolve("./public")));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.json());
+app.use(useragent.express());
+
 
 
 // Root route
