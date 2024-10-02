@@ -17,7 +17,7 @@ AdminController.checkAdmin = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_Admin);
+        const decoded = jwt.verify(token, process.env.ADMIN_PASSWORD);
         console.log('Decoded:', decoded);
         
         if (decoded.role !== 'admin') {
