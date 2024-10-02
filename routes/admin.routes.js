@@ -7,5 +7,6 @@ AdminRouter.get('/users', AdminController.getAllUsers);
 AdminRouter.get('/users/:role', AdminController.getUsersByRole);
 AdminRouter.delete('/users/:userId', AdminController.deleteUser);
 AdminRouter.post('/message', AdminController.sendMessage);
+AdminRouter.post('/delete_user', AdminController.deleteUser);
 
 module.exports = AdminRouter;
