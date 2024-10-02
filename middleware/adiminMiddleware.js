@@ -8,7 +8,7 @@ const adminMiddleware = (req, res, next) => {
         return res.json({ message: 'Unauthorized: No token provided' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET_ADMIN, (err, decoded) => {
         if (err) {
             return res.json({ message: 'Unauthorized: Invalid token' });
         }

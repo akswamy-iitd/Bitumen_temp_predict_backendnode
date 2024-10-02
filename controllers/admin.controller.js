@@ -17,7 +17,7 @@ AdminController.checkAdmin = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.ADMIN_PASSWORD);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_ADMIN);
         console.log('Decoded:', decoded);
         
         if (decoded.role !== 'admin') {
@@ -44,7 +44,7 @@ AdminController.signin = async (req, res) => {
             return res.status(404).json({ error: "Incorrect Password" });
         }
 
-        const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET_ADMIN, { expiresIn: '1d' });
 
         res.cookie('admin_token', token, {
             httpOnly: true,
