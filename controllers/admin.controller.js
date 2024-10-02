@@ -9,7 +9,7 @@ const AdminController = {};
 
 AdminController.checkAdmin = async (req, res) => {
     console.log('Checking user');
-    const token = req.cookies.admin_token; // Modified to use admin_token
+    const token = req.cookies.admin_token; 
     console.log('Token:', token);
 
     if (!token) {
@@ -17,7 +17,7 @@ AdminController.checkAdmin = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_Admin);
         console.log('Decoded:', decoded);
         
         if (decoded.role !== 'admin') {
