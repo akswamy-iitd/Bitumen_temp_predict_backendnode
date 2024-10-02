@@ -7,23 +7,23 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const AdminController = {};
 
-
 AdminController.checkAdmin = async (req, res) => {
     console.log('Checking user');
-    const token = req.cookies.token;
-    console.log(token);
+    const token = req.cookies.admin_token; // Modified to use admin_token
+    console.log('Token:', token);
 
     if (!token) {
         return res.status(401).json({ error: "No token provided, authorization denied" });
     }
-    console.log('Token:', token);
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         console.log('Decoded:', decoded);
+        
         if (decoded.role !== 'admin') {
             return res.status(401).json({ error: "Invalid token, authorization denied" });
         }
+        
         console.log('User is admin');
         res.status(200).json({ message: "You are logged" });
     } catch (error) {
@@ -32,6 +32,7 @@ AdminController.checkAdmin = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
         
 
 AdminController.signin = async (req, res) => {
