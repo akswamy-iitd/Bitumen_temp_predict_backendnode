@@ -5,11 +5,14 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const router = require("./routes/index.js");
+const useragent = require("express-useragent");
+const session = require("express-session");
+const passport = require("passport");
+
 const app = express();
 const port = process.env.PORT || 8000;
-const useragent = require("express-useragent");
 
-
+// CORS middleware
 app.use(
   cors({
     origin: true, // Automatically reflects the request origin
@@ -19,6 +22,7 @@ app.use(
   })
 );
 
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB connected"))
@@ -31,17 +35,31 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(useragent.express());
 
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+    httpOnly: true,
+    sameSite: 'None' // Adjust based on your needs
+  }
+}));
 
+// Initialize Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Root route
 app.get("/", async (req, res) => {
   res.json("You are ready to start");
 });
 
-app.use('/api',router);
-// Add Routes here
-// Don't add any route after this two middlewares
+// API routes
+app.use('/api', router);
 
+// Start the server
 app.listen(port, () => {
   console.log(`App listening on port ${port}!`);
 });

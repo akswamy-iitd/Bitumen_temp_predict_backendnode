@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const { Schema, model } = require('mongoose');
 require('dotenv').config();
 const { createTokenForUser } = require('../services/authentication');
+const mongoose = require('mongoose');
+const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 
 const SALT_WORK_FACTOR = 10;
@@ -27,10 +29,6 @@ const loginHistorySchema = new Schema({
 });
 
 const userSchema = new Schema({
-    userId: {
-        type: Number,
-        unique: true,
-    },
     fullName: {
         type: String,
         required: true,
@@ -40,12 +38,14 @@ const userSchema = new Schema({
         required: true,
         unique: true,
     },
+    googleId: {
+        type: String,
+    },
     salt: {
         type: String,
     },
     password: {
         type: String,
-        required: true,
     },
     creditleft: {
         type: Number,
@@ -65,24 +65,24 @@ const userSchema = new Schema({
 
 
 // Pre-save hook to hash the password
-userSchema.pre("save", async function (next) {
-    const user = this;
+// userSchema.pre("save", async function (next) {
+//     const user = this;
 
-    if (!user.isModified("password")) return next();
+//     if (!user.isModified("password")) return next();
 
-    try {
-        const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
-        const hashedPassword = await bcrypt.hash(user.password, salt);
-        user.salt = salt;
-        user.password = hashedPassword;
-        next();
-    } catch (err) {
-        return next(err);
-    }
-});
+//     try {
+//         const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
+//         const hashedPassword = await bcrypt.hash(user.password, salt);
+//         user.salt = salt;
+//         user.password = hashedPassword;
+//         next();
+//     } catch (err) {
+//         return next(err);
+//     }
+// });
 
 // Password match & Token generation
-userSchema.statics.matchPasswordAndGenerateToken = async function (email, password, clientIp, deviceInfo = {}, locationInfo = {}) {
+userSchema.statics.matchPasswordAndGenerateToken = async function (email, password,googleid, clientIp, deviceInfo = {}, locationInfo = {}) {
     const user = await this.findOne({ email });
     if (!user) throw new Error('User not found!');
 
@@ -113,26 +113,22 @@ userSchema.statics.matchPasswordAndGenerateToken = async function (email, passwo
     return { token, user };
 };
 
-
+userSchema.plugin(AutoIncrement, { inc_field: 'userId', start_seq: 100000 });
 // Sign-up logic
-userSchema.statics.signup = async function (fullName, email, password, creditleft = 10, role = "USER") {
+userSchema.statics.signup = async function (fullName, email,googleid, password=null, creditleft = 10, role = "USER") {
     const validRoles = ["USER", "PRO_USER"];
     if (!validRoles.includes(role)) throw new Error('Invalid role specified');
 
     const existingUser = await this.findOne({ email });
     if (existingUser) throw new Error('User already exists');
 
-    const lastUser = await this.findOne().sort('-userId');
-    const newUserId = lastUser && lastUser.userId ? lastUser.userId + 1 : 100000;
-
     const user = new this({
-        userId: newUserId,
         fullName,
         email,
         password,
         role,
         creditleft,
-
+        googleid
     });
 
     // Save the new user to the database
@@ -140,5 +136,5 @@ userSchema.statics.signup = async function (fullName, email, password, creditlef
     return user;
 };
 
-const User = model('User', userSchema);
+const User = model('Usier', userSchema);
 module.exports = User;

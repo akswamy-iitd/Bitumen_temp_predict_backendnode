@@ -5,13 +5,89 @@ const requestIp = require("request-ip");
 const useragent = require("express-useragent");
 const geoip = require("geoip-lite");
 const bcrypt = require("bcrypt");
+const mongoose = require("mongoose");
+const passport = require("passport");
+const { createTokenForUser } = require("../services/authentication");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
-const UserController = {}; 
+
+const UserController = {};
 const secret = process.env.JWT_SECRET;
+
+
+// Configure Google Strategy for Passport
+passport.use(
+  new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: `${process.env.BASE_URL}/api/google/callback`,
+      scope: ["profile", "email"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ email: profile.emails[0].value });
+        console.log('User:', user);
+        console.log('Profile:', profile);
+        // If user doesn't exist, create a new one
+        if (!user) {
+          user = await User.signup(
+            String(profile._json.name),      // fullName
+            String(profile._json.email),     // email
+            String(profile._json.sub)        // googleid
+          );
+        } 
+        else if (!user.googleId) {
+          user.googleId = profile.id;
+          await user.save();
+        }
+
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
+      }
+    }
+  )
+);
+
+
+// Serialize user
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+// Deserialize user
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
+  done(null, user);
+});
+
+// Google login route
+UserController.googlelogin = passport.authenticate("google", {
+  scope: ["profile", "email"]
+});
+
+
+// Google callback route
+UserController.googleCallback = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const token = createTokenForUser(req.user);
+
+  res.cookie("token", token, {
+    // httpOnly: true,
+    // secure: process.env.NODE_ENV === "production",
+    // sameSite: "None",
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  }).redirect(`${process.env.CLIENT_URL}`);;
+
+};
+
 
 UserController.userCheck = (req, res) => {
 
-  const token = req.cookies.token; 
+  const token = req.cookies.token;
 
   if (!token) {
     return res.status(401).json({ error: "No token provided" });
@@ -29,7 +105,7 @@ UserController.userCheck = (req, res) => {
 
 UserController.signin = async (req, res, next) => {
   const { email, password } = req.body;
-  
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -49,19 +125,19 @@ UserController.signin = async (req, res, next) => {
     console.log('Login History Entry:', {
       ip: clientIp,
       device: {
-          type: deviceInfo?.type || 'Unknown',
-          os: deviceInfo?.os || 'Unknown',
-          platform: deviceInfo?.platform || 'Unknown',
+        type: deviceInfo?.type || 'Unknown',
+        os: deviceInfo?.os || 'Unknown',
+        platform: deviceInfo?.platform || 'Unknown',
       },
       location: {
-          type: locationInfo?.type || 'Unknown',
-          city: locationInfo?.city || 'Unknown',
-          region: locationInfo?.region || 'Unknown',
-          country: locationInfo?.country || 'Unknown',
+        type: locationInfo?.type || 'Unknown',
+        city: locationInfo?.city || 'Unknown',
+        region: locationInfo?.region || 'Unknown',
+        country: locationInfo?.country || 'Unknown',
       },
       logintime: new Date(),
-  });
-  
+    });
+
     // Call matchPasswordAndGenerateToken with necessary parameters
     const { token } = await User.matchPasswordAndGenerateToken(email, password, clientIp, deviceInfo, locationInfo);
 
@@ -240,46 +316,46 @@ UserController.predict = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if ( userData.creditleft <= 0) {
+    if (userData.creditleft <= 0) {
       return res.status(400).json({ error: "Insufficient credits" });
     }
 
-      userData.creditleft -= 1;
-      userData.creditused += 1;
+    userData.creditleft -= 1;
+    userData.creditused += 1;
 
-  const fetch = (...args) =>
-    import("node-fetch").then(({ default: fetch }) => fetch(...args));
+    const fetch = (...args) =>
+      import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-  try {
-    const backendResponse = await fetch(
-      `${process.env.FLASK_API_URL}/predict`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: process.env.FLASK_SECRET_CODE,
-        },
-        body: JSON.stringify({
-          lat,
-          lon,
-          altitude,
-          category,
-        }),
-      }
-    );
-
-    // Check if the response is okay (status code 200-299)
-    if (!backendResponse.ok) {
-      throw  Error(
-        `Error: ${backendResponse.status} ${backendResponse.statusText}`
+    try {
+      const backendResponse = await fetch(
+        `${process.env.FLASK_API_URL}/predict`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: process.env.FLASK_SECRET_CODE,
+          },
+          body: JSON.stringify({
+            lat,
+            lon,
+            altitude,
+            category,
+          }),
+        }
       );
-    }
 
-    const data = await backendResponse.json();
-    res.json(data);
-  } catch (error) {
-    console.error("Failed to fetch data from Flask API:", error);
-  }
+      // Check if the response is okay (status code 200-299)
+      if (!backendResponse.ok) {
+        throw Error(
+          `Error: ${backendResponse.status} ${backendResponse.statusText}`
+        );
+      }
+
+      const data = await backendResponse.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Failed to fetch data from Flask API:", error);
+    }
   } catch (error) {
     console.error("Error processing prediction:", error);
     return res.status(500).json({ error: "Failed to process prediction" });
