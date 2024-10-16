@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { Schema, model } = require('mongoose');
 require('dotenv').config();
 const { createTokenForUser } = require('../services/authentication');

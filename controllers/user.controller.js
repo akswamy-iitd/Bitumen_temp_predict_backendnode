@@ -4,7 +4,7 @@ require("dotenv").config();
 const requestIp = require("request-ip");
 const useragent = require("express-useragent");
 const geoip = require("geoip-lite");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const passport = require("passport");
 const { createTokenForUser } = require("../services/authentication");
