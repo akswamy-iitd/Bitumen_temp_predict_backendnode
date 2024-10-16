@@ -76,9 +76,9 @@ UserController.googleCallback = async (req, res) => {
   const token = createTokenForUser(req.user);
 
   res.cookie("token", token, {
-    // httpOnly: true,
-    // secure: process.env.NODE_ENV === "production",
-    // sameSite: "None",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "None",
     maxAge: 24 * 60 * 60 * 1000, // 1 day
   }).redirect(`${process.env.CLIENT_URL}`);;
 
