@@ -80,18 +80,16 @@ const userSchema = new Schema({
 //         return next(err);
 //     }
 // });
-
-// Password match & Token generation
-userSchema.statics.matchPasswordAndGenerateToken = async function (email, password,googleid, clientIp, deviceInfo = {}, locationInfo = {}) {
+userSchema.statics.matchPasswordAndGenerateToken = async function (email, password, googleid, clientIp, deviceInfo = {}, locationInfo = {}) {
     const user = await this.findOne({ email });
     if (!user) throw new Error('User not found!');
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error('Incorrect Password');
+    // Ensure clientIp is a string
+    const ipAddress = typeof clientIp === 'string' ? clientIp : 'Unknown';
 
     // Log login attempt
     user.loginHistory.push({
-        ip: clientIp,
+        ip: ipAddress,
         device: {
             type: deviceInfo?.type || 'Unknown',
             os: deviceInfo?.os || 'Unknown',
@@ -106,9 +104,8 @@ userSchema.statics.matchPasswordAndGenerateToken = async function (email, passwo
         logintime: new Date(),
     });
 
-    await user.save();  // Save login history
+    await user.save(); 
 
-    // Generate JWT Token
     const token = createTokenForUser(user);
     return { token, user };
 };
@@ -116,6 +113,7 @@ userSchema.statics.matchPasswordAndGenerateToken = async function (email, passwo
 userSchema.plugin(AutoIncrement, { inc_field: 'userId', start_seq: 100000 });
 // Sign-up logic
 userSchema.statics.signup = async function (fullName, email,googleid, password=null, creditleft = 10, role = "USER") {
+    console.log("signup",fullName, email,googleid, password, creditleft, role);
     const validRoles = ["USER", "PRO_USER"];
     if (!validRoles.includes(role)) throw new Error('Invalid role specified');
 
@@ -136,5 +134,5 @@ userSchema.statics.signup = async function (fullName, email,googleid, password=n
     return user;
 };
 
-const User = model('Usier', userSchema);
+const User = model('User', userSchema);
 module.exports = User;

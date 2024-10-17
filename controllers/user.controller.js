@@ -105,38 +105,24 @@ UserController.userCheck = (req, res) => {
 
 UserController.signin = async (req, res, next) => {
   const { email, password } = req.body;
+  console.log('Email:', email);
+  console.log('Password:',password);
 
   try {
     const user = await User.findOne({ email });
+    console.log('User:', user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Invalid password" });
+    if(user.password !== password){
+      return res.status(404).json({ error: "Incorrect Password" });
     }
-
+    
     // Retrieve IP address and device information
     const clientIp = requestIp.getClientIp(req);
     const deviceInfo = req.useragent || {}; // Ensure you have this middleware set up
     const locationInfo = geoip.lookup(clientIp) || {};
-
-    console.log('Login History Entry:', {
-      ip: clientIp,
-      device: {
-        type: deviceInfo?.type || 'Unknown',
-        os: deviceInfo?.os || 'Unknown',
-        platform: deviceInfo?.platform || 'Unknown',
-      },
-      location: {
-        type: locationInfo?.type || 'Unknown',
-        city: locationInfo?.city || 'Unknown',
-        region: locationInfo?.region || 'Unknown',
-        country: locationInfo?.country || 'Unknown',
-      },
-      logintime: new Date(),
-    });
 
     // Call matchPasswordAndGenerateToken with necessary parameters
     const { token } = await User.matchPasswordAndGenerateToken(email, password, clientIp, deviceInfo, locationInfo);

@@ -13,11 +13,11 @@ const router = express.Router();
 // Admin routes
 router.post("/admin/check", checkAdmin);
 router.post("/admin/signin", signin);
-router.use("/admin", adminMiddleware, AdminRouter); 
+router.use("/admin",adminMiddleware, AdminRouter); 
 
 // User authentication routes
 router.get("/user/check", UserController.userCheck);
-router.post("/signup", UserController.signup);
+// router.post("/signup", UserController.signup);
 router.post("/signin", UserController.signin);
 
 // Google login routes

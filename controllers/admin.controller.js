@@ -152,7 +152,7 @@ AdminController.deleteUser = async (req, res) => {
 AdminController.sendMessage = async (req, res) => {
 
     const { senderName, senderEmail, message, credit } = req.body;
-    console.log(senderName, senderEmail, message, process.env.SENDGRID_API_KEY);
+    // console.log(senderName, senderEmail, message, process.env.SENDGRID_API_KEY);
     const { nanoid } = await import('nanoid');
     
     const uniquePassword = nanoid(10); 
@@ -161,7 +161,7 @@ AdminController.sendMessage = async (req, res) => {
     password = uniquePassword;
     try {
 
-        await User.signup(fullName, email, password, credit, role = "PRO_USER");
+        await User.signup(fullName, email,null, password, credit, "PRO_USER");
 
         const msg = {
             to: senderEmail,
@@ -176,13 +176,15 @@ AdminController.sendMessage = async (req, res) => {
                    </ul>
                    ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
                    <p>Please log in.</p>
+                   <p><a href="https://user-frontend-kidt.vercel.app?email=${encodeURIComponent(senderEmail)}&password=${encodeURIComponent(uniquePassword)}" style="padding: 10px 20px; color: white; background-color: #007bff; text-decoration: none; border-radius: 5px; display: inline-block;">Log In to Custom Temp Wizard</a></p>
                    <p>Thank you for using Custom Temp Wizard!</p>
                    <br>
                    <p>Best regards,<br>Custom Temp Wizard Team</p>`,
         };
-
+        
         await sgMail.send(msg);
         return res.status(200).json({ message: 'User account created and email sent successfully!', userId: fullName, password: uniquePassword });
+        
     } catch (error) {
         console.error('Error creating user or sending email:', error);
         return res.status(500).json({ error: 'Failed to create user or send email' });
