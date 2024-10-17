@@ -11,11 +11,10 @@ const { createTokenForUser } = require("../services/authentication");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 
+
 const UserController = {};
 const secret = process.env.JWT_SECRET;
 
-
-// Configure Google Strategy for Passport
 passport.use(
   new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
@@ -28,6 +27,7 @@ passport.use(
         let user = await User.findOne({ email: profile.emails[0].value });
         console.log('User:', user);
         console.log('Profile:', profile);
+        
         // If user doesn't exist, create a new one
         if (!user) {
           user = await User.signup(
@@ -35,11 +35,33 @@ passport.use(
             String(profile._json.email),     // email
             String(profile._json.sub)        // googleid
           );
-        } 
-        else if (!user.googleId) {
+        } else if (!user.googleId) {
           user.googleId = profile.id;
           await user.save();
         }
+
+        // Save login history (IP, device, location)
+        const clientIp = ''; // Replace with logic to get client's IP (e.g., from request headers)
+        const deviceInfo = {}; // Replace with actual device information
+        const locationInfo = {}; // Replace with actual location information
+
+        user.loginHistory.push({
+          ip: clientIp,
+          device: {
+            type: deviceInfo?.type || 'Unknown',
+            os: deviceInfo?.os || 'Unknown',
+            platform: deviceInfo?.platform || 'Unknown',
+          },
+          location: {
+            type: locationInfo?.type || 'Unknown',
+            city: locationInfo?.city || 'Unknown',
+            region: locationInfo?.region || 'Unknown',
+            country: locationInfo?.country || 'Unknown',
+          },
+          logintime: new Date(),
+        });
+
+        await user.save(); // Save login history
 
         return done(null, user);
       } catch (err) {
@@ -48,6 +70,7 @@ passport.use(
     }
   )
 );
+
 
 
 // Serialize user
