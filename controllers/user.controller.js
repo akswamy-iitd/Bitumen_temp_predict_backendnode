@@ -39,30 +39,6 @@ passport.use(
           user.googleId = profile.id;
           await user.save();
         }
-
-        // Save login history (IP, device, location)
-        const clientIp = ''; // Replace with logic to get client's IP (e.g., from request headers)
-        const deviceInfo = {}; // Replace with actual device information
-        const locationInfo = {}; // Replace with actual location information
-
-        user.loginHistory.push({
-          ip: clientIp,
-          device: {
-            type: deviceInfo?.type || 'Unknown',
-            os: deviceInfo?.os || 'Unknown',
-            platform: deviceInfo?.platform || 'Unknown',
-          },
-          location: {
-            type: locationInfo?.type || 'Unknown',
-            city: locationInfo?.city || 'Unknown',
-            region: locationInfo?.region || 'Unknown',
-            country: locationInfo?.country || 'Unknown',
-          },
-          logintime: new Date(),
-        });
-
-        await user.save(); // Save login history
-
         return done(null, user);
       } catch (err) {
         return done(err, null);
