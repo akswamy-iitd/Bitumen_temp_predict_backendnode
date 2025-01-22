@@ -4,7 +4,7 @@ const User = require('../models/user');
 const UserRouter = Router();
 
 // UserRouter.get('/profile', UserController.getUserProfile);
-UserRouter.post('/signin', UserController.signin);
+// UserRouter.post('/signin', UserController.signin);
 UserRouter.get('/profile', UserController.getProfile);
 UserRouter.post('/signup', UserController.signup);
 UserRouter.post('/find', UserController.finddata);

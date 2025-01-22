@@ -10,8 +10,6 @@ const passport = require("passport");
 const { createTokenForUser } = require("../services/authentication");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
-
-
 const UserController = {};
 const secret = process.env.JWT_SECRET;
 
@@ -25,8 +23,6 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ email: profile.emails[0].value });
-        console.log('User:', user);
-        console.log('Profile:', profile);
         
         // If user doesn't exist, create a new one
         if (!user) {
@@ -73,10 +69,9 @@ UserController.googleCallback = async (req, res) => {
   }
 
   const token = createTokenForUser(req.user);
-
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: "None",
     sameSite: "None",
     maxAge: 24 * 60 * 60 * 1000, // 1 day
   }).redirect(`${process.env.CLIENT_URL}`);;
@@ -117,21 +112,24 @@ UserController.signin = async (req, res, next) => {
     if(user.password !== password){
       return res.status(404).json({ error: "Incorrect Password" });
     }
-    
-    // Retrieve IP address and device information
-    const clientIp = requestIp.getClientIp(req);
-    const deviceInfo = req.useragent || {}; // Ensure you have this middleware set up
-    const locationInfo = geoip.lookup(clientIp) || {};
+    const token = createTokenForUser(user);
 
-    // Call matchPasswordAndGenerateToken with necessary parameters
-    const { token } = await User.matchPasswordAndGenerateToken(email, password, clientIp, deviceInfo, locationInfo);
-
+    // const { token } = await User.matchPasswordAndGenerateToken(email, password);
+    res.cookie("role", "admin", {
+        httpOnly: false,
+        secure: 'None',
+        sameSite: "None",
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+      });
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      httpOnly: false,
+      secure: 'None',
       sameSite: "None",
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
+    
+
+    
 
     res.json({
       message: "Login successful",
@@ -149,6 +147,7 @@ UserController.signin = async (req, res, next) => {
 
 // Get Profile Route
 UserController.getProfile = async (req, res, next) => {
+  console.log(req.user);
   try {
     const user = await User.findById(req.user.id).select("-password -salt");
     if (user) {
@@ -313,7 +312,7 @@ UserController.predict = async (req, res) => {
 
     try {
       const backendResponse = await fetch(
-        `${process.env.FLASK_API_URL}/predict`,
+        `${process.env.FLASK_API_URL}/predictWithCompoite`,
         {
           method: "POST",
           headers: {

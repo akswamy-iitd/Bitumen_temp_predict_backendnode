@@ -57,6 +57,7 @@ ProUserController.signin = async (req, res, next) => {
 };
 ProUserController.getProfile = async (req, res) => {
   
+  
   const user = await User.findById(req.user?.id).select(
     "userId fullName email creditleft creditused role"
   );
@@ -136,7 +137,7 @@ ProUserController.predict = async (req, res) => {
   try {
     
     const backendResponse = await fetch(
-      `${process.env.Flask_BACKEND_URL}/predict/composite`,
+      `${process.env.Flask_BACKEND_URL}/predictWithCompoite`,
       {
         method: "POST",
         headers: {
@@ -157,9 +158,28 @@ ProUserController.predict = async (req, res) => {
         `Error: ${backendResponse.status} ${backendResponse.statusText}`
       );
     }
-
     const data = await backendResponse.json();
-    res.json(data);
+
+    if(req.user.role === "PRO_USER"){
+      res.json(data);
+    }else{
+      const { normal, composite } = data;
+      const indices = [10, 15, 19, 20];
+      const maxTempsAtIndices_normal = indices.map(index => normal.max_temp[index]);
+      const minTempsAtIndices_normal = indices.map(index => normal.min_temp[index]);      
+      normal.max_temp = maxTempsAtIndices_normal;
+      normal.min_temp = minTempsAtIndices_normal;
+
+      const maxTempsAtIndices_composite = indices.map(index => composite.max_temp[index]);
+      const minTempsAtIndices_composite = indices.map(index => composite.min_temp[index]);
+      composite.max_temp = maxTempsAtIndices_composite;
+      composite.min_temp = minTempsAtIndices_composite;
+
+      res.json({  normal, composite });
+    }
+    // // res.json(data)
+
+
   } catch (error) {
     console.error("Failed to fetch data from Flask API:", error);
   }

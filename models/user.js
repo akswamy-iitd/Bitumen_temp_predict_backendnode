@@ -1,32 +1,9 @@
 const bcrypt = require('bcryptjs');
 const { Schema, model } = require('mongoose');
 require('dotenv').config();
-const { createTokenForUser } = require('../services/authentication');
 const mongoose = require('mongoose');
 const AutoIncrement = require('mongoose-sequence')(mongoose);
 
-
-const SALT_WORK_FACTOR = 10;
-
-const deviceSchema = new Schema({
-    type: { type: String, default: 'Unknown' },
-    os: { type: String, default: 'Unknown' },
-    platform: { type: String, default: 'Unknown' },
-});
-
-const locationSchema = new Schema({
-    type: { type: String, default: 'Unknown' },
-    city: { type: String, default: 'Unknown' },
-    region: { type: String, default: 'Unknown' },
-    country: { type: String, default: 'Unknown' },
-});
-
-const loginHistorySchema = new Schema({
-    ip: { type: String, required: true },
-    device: { type: deviceSchema, required: true },  // Use the deviceSchema here
-    location: { type: locationSchema, required: true },  // Use the locationSchema here
-    logintime: { type: Date, default: Date.now },
-});
 
 const userSchema = new Schema({
     fullName: {
@@ -60,62 +37,14 @@ const userSchema = new Schema({
         enum: ["USER", "PRO_USER"],
         default: "USER",
     },
-    loginHistory: [loginHistorySchema],  // Use the loginHistorySchema here
 }, { timestamps: true });
 
 
-// Pre-save hook to hash the password
-// userSchema.pre("save", async function (next) {
-//     const user = this;
-
-//     if (!user.isModified("password")) return next();
-
-//     try {
-//         const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
-//         const hashedPassword = await bcrypt.hash(user.password, salt);
-//         user.salt = salt;
-//         user.password = hashedPassword;
-//         next();
-//     } catch (err) {
-//         return next(err);
-//     }
-// });
-userSchema.statics.matchPasswordAndGenerateToken = async function (email, password, googleid, clientIp, deviceInfo = {}, locationInfo = {}) {
-    const user = await this.findOne({ email });
-    if (!user) throw new Error('User not found!');
-
-    // Ensure clientIp is a string
-    const ipAddress = typeof clientIp === 'string' ? clientIp : 'Unknown';
-
-    // Log login attempt
-    user.loginHistory.push({
-        ip: ipAddress,
-        device: {
-            type: deviceInfo?.type || 'Unknown',
-            os: deviceInfo?.os || 'Unknown',
-            platform: deviceInfo?.platform || 'Unknown',
-        },
-        location: {
-            type: locationInfo?.type || 'Unknown',
-            city: locationInfo?.city || 'Unknown',
-            region: locationInfo?.region || 'Unknown',
-            country: locationInfo?.country || 'Unknown',
-        },
-        logintime: new Date(),
-    });
-
-    await user.save(); 
-
-    const token = createTokenForUser(user);
-    return { token, user };
-};
 
 userSchema.plugin(AutoIncrement, { inc_field: 'userId', start_seq: 100000 });
 // Sign-up logic
-userSchema.statics.signup = async function (fullName, email,googleid, password=null, creditleft = 10, role = "USER") {
-    console.log("signup",fullName, email,googleid, password, creditleft, role);
-    const validRoles = ["USER", "PRO_USER"];
-    if (!validRoles.includes(role)) throw new Error('Invalid role specified');
+userSchema.statics.signup = async function (fullName, email,googleid, password=null, creditleft = 10) {
+    console.log("signup",fullName, email,googleid, password, creditleft);
 
     const existingUser = await this.findOne({ email });
     if (existingUser) throw new Error('User already exists');
@@ -124,7 +53,7 @@ userSchema.statics.signup = async function (fullName, email,googleid, password=n
         fullName,
         email,
         password,
-        role,
+        role:"USER",
         creditleft,
         googleid
     });
