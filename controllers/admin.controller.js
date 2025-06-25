@@ -3,6 +3,7 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY); 
+const Feedback = require("../models/feedback");
 
 
 const AdminController = {};
@@ -48,9 +49,10 @@ AdminController.signin = async (req, res) => {
 
         res.cookie('admin_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // secure=true only in production
-            sameSite: 'None', // For cross-site cookies
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
+            secure: true,
+            sameSite: "None",
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+
         });
         
 
@@ -113,6 +115,15 @@ AdminController.getAllUsers = async (req, res) => {
     }
 };
 
+AdminController.getAllFeedback = async (req, res) => {
+    try {
+    const feedbacks = await Feedback.find().sort({ timestamp: -1 }); // newest first
+    res.status(200).json(feedbacks);
+  } catch (error) {
+    console.error("Error fetching feedbacks:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 // Get users by role
 AdminController.getUsersByRole = async (req, res) => {
     const { role } = req.params;
@@ -149,47 +160,74 @@ AdminController.deleteUser = async (req, res) => {
 };
 
 
-AdminController.sendMessage = async (req, res) => {
+// AdminController.sendMessage = async (req, res) => {
 
-    const { senderName, senderEmail, message, credit } = req.body;
-    // console.log(senderName, senderEmail, message, process.env.SENDGRID_API_KEY);
-    const { nanoid } = await import('nanoid');
+//     const { senderName, senderEmail, message, credit } = req.body;
+//     // console.log(senderName, senderEmail, message, process.env.SENDGRID_API_KEY);
+//     const { nanoid } = await import('nanoid');
     
-    const uniquePassword = nanoid(10); 
-    fullName = senderName;
-    email = senderEmail;
-    password = uniquePassword;
-    try {
+//     const uniquePassword = nanoid(10); 
+//     fullName = senderName;
+//     email = senderEmail;
+//     password = uniquePassword;
+//     try {
 
-        await User.signup(fullName, email,null, password, credit, "PRO_USER");
+//         await User.signup(fullName, email,null, password, credit, "PRO_USER");
 
-        const msg = {
-            to: senderEmail,
-            from: 'akswamy.tempreproject@gmail.com',
-            subject: 'Your Custom Temp Wizard Account Information',
-            text: `Hello ${senderName},\n\nYour Custom Temp Wizard account has been successfully created. Below is your account information:\n\nUsername: ${senderEmail}\nPassword: ${uniquePassword}\n\n${message ? `Message: ${message}\n\n` : ''}Please log in and change your password immediately.\n\nThank you for using Custom Temp Wizard!\n\nBest regards,\nCustom Temp Wizard Team`,
-            html: `<p>Hello <strong>${senderName}</strong>,</p>
-                   <p>Your Custom Temp Wizard account has been successfully created. Below is your account information:</p>
-                   <ul>
-                       <li><strong>Username:</strong> ${senderEmail}</li>
-                       <li><strong>Password:</strong> ${uniquePassword}</li>
-                   </ul>
-                   ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
-                   <p>Please log in.</p>
-                   <p><a href="https://user-frontend-kidt.vercel.app?email=${encodeURIComponent(senderEmail)}&password=${encodeURIComponent(uniquePassword)}" style="padding: 10px 20px; color: white; background-color: #007bff; text-decoration: none; border-radius: 5px; display: inline-block;">Log In to Custom Temp Wizard</a></p>
-                   <p>Thank you for using Custom Temp Wizard!</p>
-                   <br>
-                   <p>Best regards,<br>Custom Temp Wizard Team</p>`,
-        };
+//         const msg = {
+//             to: senderEmail,
+//             from: 'akswamy.tempreproject@gmail.com',
+//             subject: 'Your Custom Temp Wizard Account Information',
+//             text: `Hello ${senderName},\n\nYour Custom Temp Wizard account has been successfully created. Below is your account information:\n\nUsername: ${senderEmail}\nPassword: ${uniquePassword}\n\n${message ? `Message: ${message}\n\n` : ''}Please log in and change your password immediately.\n\nThank you for using Custom Temp Wizard!\n\nBest regards,\nCustom Temp Wizard Team`,
+//             html: `<p>Hello <strong>${senderName}</strong>,</p>
+//                    <p>Your Custom Temp Wizard account has been successfully created. Below is your account information:</p>
+//                    <ul>
+//                        <li><strong>Username:</strong> ${senderEmail}</li>
+//                        <li><strong>Password:</strong> ${uniquePassword}</li>
+//                    </ul>
+//                    ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+//                    <p>Please log in.</p>
+//                    <p><a href="https://user-frontend-kidt.vercel.app?email=${encodeURIComponent(senderEmail)}&password=${encodeURIComponent(uniquePassword)}" style="padding: 10px 20px; color: white; background-color: #007bff; text-decoration: none; border-radius: 5px; display: inline-block;">Log In to Custom Temp Wizard</a></p>
+//                    <p>Thank you for using Custom Temp Wizard!</p>
+//                    <br>
+//                    <p>Best regards,<br>Custom Temp Wizard Team</p>`,
+//         };
         
-        await sgMail.send(msg);
-        return res.status(200).json({ message: 'User account created and email sent successfully!', userId: fullName, password: uniquePassword });
+//         await sgMail.send(msg);
+//         return res.status(200).json({ message: 'User account created and email sent successfully!', userId: fullName, password: uniquePassword });
         
-    } catch (error) {
-        console.error('Error creating user or sending email:', error);
-        return res.status(500).json({ error: 'Failed to create user or send email' });
-    }
+//     } catch (error) {
+//         console.error('Error creating user or sending email:', error);
+//         return res.status(500).json({ error: 'Failed to create user or send email' });
+//     }
+// };
+
+AdminController.addUser = async (req, res) => {
+  const { senderName, senderEmail, credit, role } = req.body;
+
+  const { nanoid } = await import('nanoid');
+  const uniquePassword = nanoid(10);
+
+  const fullName = senderName;
+  const email = senderEmail;
+  const password = uniquePassword;
+
+  try {
+    await User.signup(fullName, email, null, password, credit, role || "USER");
+
+    return res.status(200).json({
+      message: 'User created and email sent!',
+      userId: fullName,
+      password: uniquePassword
+    });
+
+  } catch (error) {
+    console.error('Error creating user or sending email:', error);
+    return res.status(500).json({ error: 'Failed to create user or send email' });
+  }
 };
+
+
 
 
 module.exports = AdminController;
