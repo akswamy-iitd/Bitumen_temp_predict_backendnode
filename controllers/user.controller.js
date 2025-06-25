@@ -345,4 +345,27 @@ UserController.predict = async (req, res) => {
     return res.status(500).json({ error: "Failed to process prediction" });
   }
 };
+
+UserController.sendFeedback = async(req, res)  => {
+  const { name, email, latitude, longitude, timestamp, altitude, feedback } = req.body;
+
+  try {
+    await db.collection('feedback').add({
+      name,
+      email,
+      latitude,
+      longitude,
+      timestamp,
+      altitude,
+      feedback,
+    });
+
+    res.status(200).json({ message: 'Feedback received' });
+  } catch (error) {
+    console.error("Feedback save error:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+
 module.exports = UserController;

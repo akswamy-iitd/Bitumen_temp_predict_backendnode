@@ -9,4 +9,5 @@ UserRouter.get('/profile', UserController.getProfile);
 UserRouter.post('/signup', UserController.signup);
 UserRouter.post('/find', UserController.finddata);
 UserRouter.post('/predict', UserController.predict);
+UserRouter.post('/sendfeedback', UserController.sendFeedback);
 module.exports = UserRouter
