@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const { createTokenForUser } = require("../services/authentication");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const Feedback = require("../models/feedback"); // import the model at the top
 
 const UserController = {};
 const secret = process.env.JWT_SECRET;
@@ -346,11 +347,21 @@ UserController.predict = async (req, res) => {
   }
 };
 
-UserController.sendFeedback = async(req, res)  => {
-  const { name, email, latitude, longitude, timestamp, altitude, feedback } = req.body;
+UserController.sendFeedback = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { latitude, longitude, timestamp, altitude, feedback } = req.body;
+  const name = req.user.fullName;
+  const email = req.user.email;
+
+  if (!feedback) {
+    return res.status(400).json({ error: "Feedback message is required" });
+  }
 
   try {
-    await db.collection('feedback').add({
+    const newFeedback = new Feedback({
       name,
       email,
       latitude,
@@ -360,12 +371,14 @@ UserController.sendFeedback = async(req, res)  => {
       feedback,
     });
 
-    res.status(200).json({ message: 'Feedback received' });
+    await newFeedback.save();
+
+    res.status(200).json({ message: "Feedback received" });
   } catch (error) {
-    console.error("Feedback save error:", error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error saving feedback:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-}
+};
 
 
 module.exports = UserController;
