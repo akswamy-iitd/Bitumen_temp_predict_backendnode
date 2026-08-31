@@ -4,6 +4,7 @@ const csvParser = require("csv-parser");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const { isPointInIndia, parseCoordinates } = require("../services/indiaBoundary.js");
 require("dotenv").config();
 
 const router = express.Router();
@@ -71,6 +72,16 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         const requiredCredits = results.length;
         if (userData.creditleft < requiredCredits) {
           return res.status(400).json({ error: "Insufficient credits" });
+        }
+
+        for (let index = 0; index < results.length; index += 1) {
+          const row = results[index];
+          const coordinates = parseCoordinates(row.latitude, row.longitude);
+          if (!coordinates || !(await isPointInIndia(coordinates.lat, coordinates.lon))) {
+            return res.status(400).json({
+              error: `Row ${index + 2} has coordinates outside India or invalid coordinates`,
+            });
+          }
         }
 
         const processedData = [];

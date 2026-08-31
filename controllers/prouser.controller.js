@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const { decode } = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
+const { isPointInIndia, parseCoordinates } = require("../services/indiaBoundary.js");
+const { consumeCaptchaProof } = require("../services/captcha.js");
 
 require("dotenv").config();
 
@@ -113,6 +115,23 @@ ProUserController.predict = async (req, res) => {
   const { lat, lon, altitude } = req.body;
   console.log("Request body:", req.body);
   try {
+    const coordinates = parseCoordinates(lat, lon);
+    if (!coordinates) {
+      return res.status(400).json({ error: "Invalid latitude or longitude." });
+    }
+
+    if (!(await isPointInIndia(coordinates.lat, coordinates.lon))) {
+      return res.status(400).json({
+        error: "Please provide latitude and longitude within India.",
+      });
+    }
+
+    if (!consumeCaptchaProof(req.body.captchaProof, req.user.id)) {
+      return res.status(400).json({
+        error: "Please solve the CAPTCHA before submitting.",
+      });
+    }
+
     const userData = await User.findById(req.user.id);
     console.log(userData)
     if (!userData) {
