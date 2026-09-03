@@ -129,7 +129,6 @@ ProUserController.predict = async (req, res) => {
   // const { lat, lon, altitude } = req.body;
   const { lat, lon } = req.body;
 
-  console.log("Request body:", req.body);
   try {
     const coordinates = parseCoordinates(lat, lon);
     if (!coordinates) {
@@ -149,7 +148,6 @@ ProUserController.predict = async (req, res) => {
     }
 
     const userData = await User.findById(req.user.id);
-    console.log(userData)
     if (!userData) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -164,7 +162,7 @@ ProUserController.predict = async (req, res) => {
 
   } catch (error) {
     console.error("Error processing /dashboard/find:", error);
-    res.status(500).json({ error: "Failed to process data" });
+    return res.status(500).json({ error: "Failed to process data" });
   }
   const fetch = (...args) =>
     import("node-fetch").then(({ default: fetch }) => fetch(...args));
@@ -198,11 +196,24 @@ ProUserController.predict = async (req, res) => {
     }
     const data = await backendResponse.json();
 
-    if(req.user.role === "PRO_USER"){
-      res.json(data);
-    }else{
-      const { normal, composite } = data;
+    if (req.user.role === "PRO_USER") {
+      return res.json(data);
+    } else {
+      const { normal } = data;
       const indices = [10, 18, 19, 20];
+      if (
+        !normal ||
+        !Array.isArray(normal.max_temp) ||
+        !Array.isArray(normal.min_temp) ||
+        !indices.every(
+          index =>
+            Number.isFinite(Number(normal.max_temp[index])) &&
+            Number.isFinite(Number(normal.min_temp[index]))
+        )
+      ) {
+        throw new Error("Flask response is missing normal temperature arrays");
+      }
+
       const maxTempsAtIndices_normal = indices.map(index =>
         roundUpToMultipleOfFive(normal.max_temp[index])
       );
@@ -212,22 +223,16 @@ ProUserController.predict = async (req, res) => {
       normal.max_temp = maxTempsAtIndices_normal;
       normal.min_temp = minTempsAtIndices_normal;
 
-      const maxTempsAtIndices_composite = indices.map(index =>
-        roundUpToMultipleOfFive(composite.max_temp[index])
-      );
-      const minTempsAtIndices_composite = indices.map(index =>
-        roundDownToMultipleOfFive(composite.min_temp[index])
-      );
-      composite.max_temp = maxTempsAtIndices_composite;
-      composite.min_temp = minTempsAtIndices_composite;
-
-      res.json({  normal });
+      return res.json({ normal });
     }
     // // res.json(data)
 
 
   } catch (error) {
     console.error("Failed to fetch data from Flask API:", error);
+    return res.status(502).json({
+      error: "Temperature prediction service returned an invalid response",
+    });
   }
 };
 
