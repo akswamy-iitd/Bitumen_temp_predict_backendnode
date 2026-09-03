@@ -202,7 +202,7 @@ ProUserController.predict = async (req, res) => {
       res.json(data);
     }else{
       const { normal, composite } = data;
-      const indices = [10, 15, 19, 20];
+      const indices = [10, 18, 19, 20];
       const maxTempsAtIndices_normal = indices.map(index =>
         roundUpToMultipleOfFive(normal.max_temp[index])
       );
