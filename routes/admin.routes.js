@@ -10,6 +10,5 @@ AdminRouter.get('/users', AdminController.getAllUsers);
 AdminRouter.post('/delete_user', AdminController.deleteUser);
 AdminRouter.get('/allfeedback', AdminController.getAllFeedback);
 AdminRouter.post('/adduser', AdminController.addUser);
-AdminRouter.get('/getSendfeedbackpredicted', AdminController.getSendfeedbackpredicted)
 
 module.exports = AdminRouter;

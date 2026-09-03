@@ -354,8 +354,9 @@ UserController.sendFeedback = async (req, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { name, email, latitude, longitude, timestamp, altitude, feedback } = req.body;
-
+  const { name, email, latitude, longitude, timestamp, elevation, feedback } = req.body;
+  // const name = req.user.fullName;
+  // const email = req.user.email;
 
   if (!feedback) {
     return res.status(400).json({ error: "Feedback message is required" });
@@ -368,7 +369,7 @@ UserController.sendFeedback = async (req, res) => {
       latitude,
       longitude,
       timestamp,
-      altitude,
+      elevation,
       feedback,
     });
 

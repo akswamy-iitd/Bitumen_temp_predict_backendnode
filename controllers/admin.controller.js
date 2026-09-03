@@ -3,9 +3,6 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY); 
-const Feedback = require("../models/feedback");
-const { nanoid } = require('nanoid'); // ✅ Use require instead of dynamic import
-const PredictedFeedback = require("../models/predictedFeedback")
 
 
 const AdminController = {};
@@ -207,6 +204,7 @@ AdminController.deleteUser = async (req, res) => {
 AdminController.addUser = async (req, res) => {
   const { senderName, senderEmail, credit, role } = req.body;
 
+  const { nanoid } = await import('nanoid');
   const uniquePassword = nanoid(10);
 
   const fullName = senderName;
@@ -227,17 +225,5 @@ AdminController.addUser = async (req, res) => {
     return res.status(500).json({ error: 'Failed to create user or send email' });
   }
 };
-
-AdminController.getSendfeedbackpredicted = async (req, res) => {
-  try {
-    const feedbackList = await PredictedFeedback.find().sort({ submittedAt: -1 });
-    res.json(feedbackList);
-  } catch (err) {
-    res.status(500).json({ error: 'Error fetching feedback' });
-  }
-}
-
-
-
 
 module.exports = AdminController;
