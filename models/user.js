@@ -43,7 +43,7 @@ const userSchema = new Schema({
 
 userSchema.plugin(AutoIncrement, { inc_field: 'userId', start_seq: 100000 });
 // Sign-up logic
-userSchema.statics.signup = async function (fullName, email,googleid, password=null, creditleft = 10) {
+userSchema.statics.signup = async function (fullName, email,googleid, password=null, creditleft = 10, role) {
     console.log("signup",fullName, email,googleid, password, creditleft);
 
     const existingUser = await this.findOne({ email });
@@ -53,7 +53,7 @@ userSchema.statics.signup = async function (fullName, email,googleid, password=n
         fullName,
         email,
         password,
-        role:"USER",
+        role,
         creditleft,
         googleid
     });

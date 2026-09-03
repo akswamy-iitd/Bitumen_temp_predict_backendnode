@@ -10,4 +10,6 @@ UserRouter.post('/signup', UserController.signup);
 UserRouter.post('/find', UserController.finddata);
 UserRouter.post('/predict', UserController.predict);
 UserRouter.post('/sendfeedback', UserController.sendFeedback);
+UserRouter.post('/sendfeedbackpredicted', UserController.sendfeedbackpredicted);
+
 module.exports = UserRouter

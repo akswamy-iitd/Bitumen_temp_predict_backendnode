@@ -110,7 +110,9 @@ ProUserController.signup = async (req, res, next) => {
 
 
 ProUserController.predict = async (req, res) => {
-  const { lat, lon, altitude } = req.body;
+  // const { lat, lon, altitude } = req.body;
+  const { lat, lon } = req.body;
+
   console.log("Request body:", req.body);
   try {
     const userData = await User.findById(req.user.id);
@@ -136,8 +138,11 @@ ProUserController.predict = async (req, res) => {
 
   try {
     
+
     const backendResponse = await fetch(
-      `${process.env.Flask_BACKEND_URL}/predictWithCompoite`,
+      // `${process.env.Flask_BACKEND_URL}/predictWithCompoite`,
+      `https://pavement.iitd.ac.in/api/flask/predictWithCompoite`,
+
       {
         method: "POST",
         headers: {
@@ -147,7 +152,7 @@ ProUserController.predict = async (req, res) => {
         body: JSON.stringify({
           lat,
           lon,
-          altitude,
+          // altitude,
         }),
       }
     );
@@ -163,19 +168,19 @@ ProUserController.predict = async (req, res) => {
     if(req.user.role === "PRO_USER"){
       res.json(data);
     }else{
-      const { normal, composite } = data;
-      const indices = [10, 15, 19, 20];
+      const { normal } = data;
+      const indices = [10, 18, 19, 20];
       const maxTempsAtIndices_normal = indices.map(index => normal.max_temp[index]);
       const minTempsAtIndices_normal = indices.map(index => normal.min_temp[index]);      
       normal.max_temp = maxTempsAtIndices_normal;
       normal.min_temp = minTempsAtIndices_normal;
 
-      const maxTempsAtIndices_composite = indices.map(index => composite.max_temp[index]);
-      const minTempsAtIndices_composite = indices.map(index => composite.min_temp[index]);
-      composite.max_temp = maxTempsAtIndices_composite;
-      composite.min_temp = minTempsAtIndices_composite;
+      // const maxTempsAtIndices_composite = indices.map(index => composite.max_temp[index]);
+      // const minTempsAtIndices_composite = indices.map(index => composite.min_temp[index]);
+      // composite.max_temp = maxTempsAtIndices_composite;
+      // composite.min_temp = minTempsAtIndices_composite;
 
-      res.json({  normal, composite });
+      res.json({  normal });
     }
     // // res.json(data)
 

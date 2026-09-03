@@ -10,6 +10,7 @@ const passport = require("passport");
 const { createTokenForUser } = require("../services/authentication");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const Feedback = require("../models/feedback"); // import the model at the top
+const PredictedFeedback = require("../models/predictedFeedback");
 
 const UserController = {};
 const secret = process.env.JWT_SECRET;
@@ -38,6 +39,7 @@ passport.use(
         }
         return done(null, user);
       } catch (err) {
+        console.error("Google Strategy Error:", err);
         return done(err, null);
       }
     }
@@ -72,7 +74,7 @@ UserController.googleCallback = async (req, res) => {
   const token = createTokenForUser(req.user);
   res.cookie("token", token, {
     httpOnly: true,
-    secure: "None",
+    secure: true,
     sameSite: "None",
     maxAge: 24 * 60 * 60 * 1000, // 1 day
   }).redirect(`${process.env.CLIENT_URL}`);;
@@ -117,14 +119,14 @@ UserController.signin = async (req, res, next) => {
 
     // const { token } = await User.matchPasswordAndGenerateToken(email, password);
     res.cookie("role", "admin", {
-        httpOnly: false,
-        secure: 'None',
+        httpOnly: true,
+        secure: true,
         sameSite: "None",
         maxAge: 24 * 60 * 60 * 1000, // 1 day
       });
     res.cookie("token", token, {
-      httpOnly: false,
-      secure: 'None',
+      httpOnly: true,
+      secure: true,
       sameSite: "None",
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
@@ -352,9 +354,8 @@ UserController.sendFeedback = async (req, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { latitude, longitude, timestamp, altitude, feedback } = req.body;
-  const name = req.user.fullName;
-  const email = req.user.email;
+  const { name, email, latitude, longitude, timestamp, altitude, feedback } = req.body;
+
 
   if (!feedback) {
     return res.status(400).json({ error: "Feedback message is required" });
@@ -379,6 +380,18 @@ UserController.sendFeedback = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+UserController.sendfeedbackpredicted = async (req, res) => {
+  try {
+    const { category, selectedCategory, predictedTemp, user, feedback } = req.body;
+    const newEntry = new PredictedFeedback({ category, selectedCategory, predictedTemp, user, feedback });
+    await newEntry.save();
+    res.status(201).json({ message: 'Feedback saved successfully' });
+  } catch (err) {
+    console.error('Save error:', err);
+    res.status(500).json({ error: 'Server error while saving feedback' });
+  }
+}
 
 
 module.exports = UserController;
