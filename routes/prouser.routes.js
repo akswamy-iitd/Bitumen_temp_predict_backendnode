@@ -3,6 +3,7 @@ const ProUserController = require('../controllers/prouser.controller');
 const uploadRoute = require('./uploadRoute.js');
 const {
   getIndiaGeoJson,
+  getPdfStateBoundaryGeoJson,
   isPointInIndia,
   parseCoordinates,
 } = require('../services/indiaBoundary.js');
@@ -46,6 +47,15 @@ ProUserRouter.get('/india-boundary', async (req, res) => {
   } catch (error) {
     console.error('Failed to load India boundary:', error);
     return res.status(500).json({ error: 'Failed to load India boundary' });
+  }
+});
+ProUserRouter.get('/pdf-state-boundary', async (req, res) => {
+  try {
+    res.set('Cache-Control', 'private, max-age=86400');
+    return res.json(await getPdfStateBoundaryGeoJson());
+  } catch (error) {
+    console.error('Failed to load PDF state boundary:', error);
+    return res.status(500).json({ error: 'Failed to load PDF state boundary' });
   }
 });
 ProUserRouter.use('/findwithcsv', uploadRoute);

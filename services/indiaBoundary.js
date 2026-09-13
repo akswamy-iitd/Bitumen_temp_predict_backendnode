@@ -10,9 +10,11 @@ const SHAPEFILE_PATH = path.join(
   "India_Taluk_updated",
   "IND_Taluk.shp"
 );
+const PDF_STATE_BOUNDARY_PATH = path.join(__dirname, "..", "STATE_BOUNDARY.shp");
 
 let polygonsPromise;
 let mapGeoJsonPromise;
+let pdfStateBoundaryPromise;
 
 function geometryBounds(geometry) {
   const bounds = [Infinity, Infinity, -Infinity, -Infinity];
@@ -121,8 +123,37 @@ async function getIndiaGeoJson() {
   return mapGeoJsonPromise;
 }
 
+async function getPdfStateBoundaryGeoJson() {
+  if (!pdfStateBoundaryPromise) {
+    pdfStateBoundaryPromise = (async () => {
+      const features = [];
+      const source = await shapefile.open(PDF_STATE_BOUNDARY_PATH);
+      while (true) {
+        const result = await source.read();
+        if (result.done) break;
+        const geometry = result.value.geometry;
+        if (geometry && (geometry.type === "Polygon" || geometry.type === "MultiPolygon")) {
+          features.push(simplify(
+            { type: "Feature", properties: {}, geometry },
+            { tolerance: 0.005, highQuality: false }
+          ));
+        }
+      }
+      if (features.length === 0) {
+        throw new Error(`No polygon geometry found in ${PDF_STATE_BOUNDARY_PATH}`);
+      }
+      return { type: "FeatureCollection", features };
+    })().catch((error) => {
+      pdfStateBoundaryPromise = undefined;
+      throw error;
+    });
+  }
+  return pdfStateBoundaryPromise;
+}
+
 module.exports = {
   getIndiaGeoJson,
+  getPdfStateBoundaryGeoJson,
   getPolygons,
   isPointInIndia,
   parseCoordinates,
