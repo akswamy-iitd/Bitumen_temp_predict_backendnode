@@ -9,20 +9,6 @@ require("dotenv").config();
 
 const ProUserController = {};
 
-const roundUpToMultipleOfFive = (value) => {
-  const temperature = Number(value);
-  return Number.isFinite(temperature)
-    ? Math.ceil(temperature / 5) * 5
-    : value;
-};
-
-const roundDownToMultipleOfFive = (value) => {
-  const temperature = Number(value);
-  return Number.isFinite(temperature)
-    ? Math.floor(temperature / 5) * 5
-    : value;
-};
-
 ProUserController.proUserCheck = (req, res) => {
   const token = req.cookies.token; 
 
@@ -214,12 +200,10 @@ ProUserController.predict = async (req, res) => {
         throw new Error("Flask response is missing normal temperature arrays");
       }
 
-      const maxTempsAtIndices_normal = indices.map(index =>
-        roundUpToMultipleOfFive(normal.max_temp[index])
-      );
-      const minTempsAtIndices_normal = indices.map(index =>
-        roundDownToMultipleOfFive(normal.min_temp[index])
-      );
+      // Keep the model's actual values in the API response. Bumped values are
+      // derived only while generating the downloadable PDF in the frontend.
+      const maxTempsAtIndices_normal = indices.map(index => normal.max_temp[index]);
+      const minTempsAtIndices_normal = indices.map(index => normal.min_temp[index]);
       normal.max_temp = maxTempsAtIndices_normal;
       normal.min_temp = minTempsAtIndices_normal;
 
